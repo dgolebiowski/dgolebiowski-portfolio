@@ -1,67 +1,11 @@
-// header.jsx — three header variants + Tweaks panel
+// header.jsx — three header variants (no tweaks panel, no custom cursor)
 
-const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "headerVariant": "kinetic",
-  "blueIntensity": "med",
-  "galleryLayout": "mosaic",
-  "animations": true,
-  "showCustomCursor": true
-}/*EDITMODE-END*/;
-
-// ── Custom cursor ───────────────────────────────────────────────────────────
-function CustomCursor({ enabled }) {
-  const dotRef = React.useRef(null);
-  const ringRef = React.useRef(null);
-  React.useEffect(() => {
-    if (!enabled) return;
-    let x = window.innerWidth / 2, y = window.innerHeight / 2;
-    let rx = x, ry = y;
-    let raf;
-    const onMove = (e) => { x = e.clientX; y = e.clientY; if (dotRef.current) { dotRef.current.style.transform = `translate(${x}px, ${y}px)`; } };
-    const tick = () => {
-      rx += (x - rx) * 0.18;
-      ry += (y - ry) * 0.18;
-      if (ringRef.current) ringRef.current.style.transform = `translate(${rx}px, ${ry}px)`;
-      raf = requestAnimationFrame(tick);
-    };
-    const onOver = (e) => {
-      const t = e.target;
-      const isLink = t.closest('a, button, input, textarea, select, .work, .testi, .service');
-      if (ringRef.current) ringRef.current.style.transform += isLink ? ' scale(2.4)' : '';
-      if (ringRef.current) ringRef.current.dataset.hover = isLink ? '1' : '0';
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseover', onOver);
-    raf = requestAnimationFrame(tick);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseover', onOver);
-      cancelAnimationFrame(raf);
-    };
-  }, [enabled]);
-
-  if (!enabled) return null;
-  return (
-    <>
-      <style>{`
-        html, body, a, button { cursor: none !important; }
-        .cur-dot, .cur-ring { position: fixed; top:0; left:0; pointer-events:none; z-index:9999;
-          will-change: transform; }
-        .cur-dot { width:6px; height:6px; border-radius:50%; background: var(--blue);
-          margin:-3px 0 0 -3px; mix-blend-mode: difference; }
-        .cur-ring { width:36px; height:36px; border-radius:50%;
-          border:1px solid var(--blue); margin:-18px 0 0 -18px;
-          transition: width .25s, height .25s, background .25s;
-          opacity:.65;
-        }
-        .cur-ring[data-hover="1"]{ background: rgba(168,200,255,0.12); opacity:1 }
-        @media (max-width:780px){ .cur-dot, .cur-ring { display:none } html, body, a, button { cursor:auto !important } }
-      `}</style>
-      <div className="cur-ring" ref={ringRef}></div>
-      <div className="cur-dot" ref={dotRef}></div>
-    </>
-  );
-}
+const SETTINGS = {
+  headerVariant: "kinetic",   // 'kinetic' | 'stacked' | 'split'
+  blueIntensity: "med",       // 'soft' | 'med' | 'bold'
+  galleryLayout: "mosaic",    // 'mosaic' | 'grid' | 'strip'
+  animations: true,
+};
 
 // ── Header A: KINETIC EDITORIAL ─────────────────────────────────────────────
 function HeaderKinetic() {
@@ -241,70 +185,17 @@ function LocalTime() {
 
 // ── App ─────────────────────────────────────────────────────────────────────
 function App() {
-  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
-
   React.useEffect(() => {
-    document.body.dataset.blue = t.blueIntensity;
-    document.body.dataset.gallery = t.galleryLayout;
-    document.body.dataset.anim = t.animations ? '1' : '0';
-  }, [t.blueIntensity, t.galleryLayout, t.animations]);
+    document.body.dataset.blue = SETTINGS.blueIntensity;
+    document.body.dataset.gallery = SETTINGS.galleryLayout;
+    document.body.dataset.anim = SETTINGS.animations ? '1' : '0';
+  }, []);
 
-  const Header = t.headerVariant === 'stacked' ? HeaderStacked
-              : t.headerVariant === 'split' ? HeaderSplit
+  const Header = SETTINGS.headerVariant === 'stacked' ? HeaderStacked
+              : SETTINGS.headerVariant === 'split' ? HeaderSplit
               : HeaderKinetic;
 
-  return (
-    <>
-      <CustomCursor enabled={t.showCustomCursor} />
-      <Header />
-      <TweaksPanel title="Tweaks">
-        <TweakSection label="Header" />
-        <TweakRadio
-          label="Wariant"
-          value={t.headerVariant}
-          options={[
-            {value:'kinetic', label:'Kinetic'},
-            {value:'stacked', label:'Stacked'},
-            {value:'split', label:'Split'},
-          ]}
-          onChange={(v) => setTweak('headerVariant', v)}
-        />
-        <TweakSection label="Style" />
-        <TweakRadio
-          label="Baby blue"
-          value={t.blueIntensity}
-          options={[
-            {value:'soft', label:'Soft'},
-            {value:'med', label:'Med'},
-            {value:'bold', label:'Bold'},
-          ]}
-          onChange={(v) => setTweak('blueIntensity', v)}
-        />
-        <TweakSection label="Galeria" />
-        <TweakRadio
-          label="Układ"
-          value={t.galleryLayout}
-          options={[
-            {value:'mosaic', label:'Mozaika'},
-            {value:'grid', label:'Siatka'},
-            {value:'strip', label:'Strip'},
-          ]}
-          onChange={(v) => setTweak('galleryLayout', v)}
-        />
-        <TweakSection label="Interakcje" />
-        <TweakToggle
-          label="Animacje"
-          value={t.animations}
-          onChange={(v) => setTweak('animations', v)}
-        />
-        <TweakToggle
-          label="Custom kursor"
-          value={t.showCustomCursor}
-          onChange={(v) => setTweak('showCustomCursor', v)}
-        />
-      </TweaksPanel>
-    </>
-  );
+  return <Header />;
 }
 
 const root = ReactDOM.createRoot(document.getElementById('header-mount'));
