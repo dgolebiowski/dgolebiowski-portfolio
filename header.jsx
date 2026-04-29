@@ -1,12 +1,15 @@
-// header.jsx — three header variants + Tweaks panel
+// header.jsx — three header variants (no Tweaks panel)
 
-const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "headerVariant": "kinetic",
-  "blueIntensity": "med",
-  "galleryLayout": "mosaic",
-  "animations": true,
-  "showCustomCursor": true
-}/*EDITMODE-END*/;
+// Wybierz wariant: 'kinetic' | 'stacked' | 'split'
+const HEADER_VARIANT = 'kinetic';
+
+// Stałe ustawienia (zamiast panelu)
+const SETTINGS = {
+  blueIntensity: 'med',     // 'soft' | 'med' | 'bold'
+  galleryLayout: 'mosaic',  // 'mosaic' | 'grid' | 'strip'
+  animations: true,
+  showCustomCursor: true,
+};
 
 // ── Custom cursor ───────────────────────────────────────────────────────────
 function CustomCursor({ enabled }) {
@@ -241,68 +244,20 @@ function LocalTime() {
 
 // ── App ─────────────────────────────────────────────────────────────────────
 function App() {
-  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
-
   React.useEffect(() => {
-    document.body.dataset.blue = t.blueIntensity;
-    document.body.dataset.gallery = t.galleryLayout;
-    document.body.dataset.anim = t.animations ? '1' : '0';
-  }, [t.blueIntensity, t.galleryLayout, t.animations]);
+    document.body.dataset.blue = SETTINGS.blueIntensity;
+    document.body.dataset.gallery = SETTINGS.galleryLayout;
+    document.body.dataset.anim = SETTINGS.animations ? '1' : '0';
+  }, []);
 
-  const Header = t.headerVariant === 'stacked' ? HeaderStacked
-              : t.headerVariant === 'split' ? HeaderSplit
+  const Header = HEADER_VARIANT === 'stacked' ? HeaderStacked
+              : HEADER_VARIANT === 'split' ? HeaderSplit
               : HeaderKinetic;
 
   return (
     <>
-      <CustomCursor enabled={t.showCustomCursor} />
+      <CustomCursor enabled={SETTINGS.showCustomCursor} />
       <Header />
-      <TweaksPanel title="Tweaks">
-        <TweakSection label="Header" />
-        <TweakRadio
-          label="Wariant"
-          value={t.headerVariant}
-          options={[
-            {value:'kinetic', label:'Kinetic'},
-            {value:'stacked', label:'Stacked'},
-            {value:'split', label:'Split'},
-          ]}
-          onChange={(v) => setTweak('headerVariant', v)}
-        />
-        <TweakSection label="Style" />
-        <TweakRadio
-          label="Baby blue"
-          value={t.blueIntensity}
-          options={[
-            {value:'soft', label:'Soft'},
-            {value:'med', label:'Med'},
-            {value:'bold', label:'Bold'},
-          ]}
-          onChange={(v) => setTweak('blueIntensity', v)}
-        />
-        <TweakSection label="Galeria" />
-        <TweakRadio
-          label="Układ"
-          value={t.galleryLayout}
-          options={[
-            {value:'mosaic', label:'Mozaika'},
-            {value:'grid', label:'Siatka'},
-            {value:'strip', label:'Strip'},
-          ]}
-          onChange={(v) => setTweak('galleryLayout', v)}
-        />
-        <TweakSection label="Interakcje" />
-        <TweakToggle
-          label="Animacje"
-          value={t.animations}
-          onChange={(v) => setTweak('animations', v)}
-        />
-        <TweakToggle
-          label="Custom kursor"
-          value={t.showCustomCursor}
-          onChange={(v) => setTweak('showCustomCursor', v)}
-        />
-      </TweaksPanel>
     </>
   );
 }
