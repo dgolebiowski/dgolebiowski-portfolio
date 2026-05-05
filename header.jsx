@@ -134,12 +134,36 @@ function KineticLine({ text, italic = false }) {
 // ── Header ──────────────────────────────────────────────────────────────────
 function Header() {
   const ulineRef = React.useRef(null);
+  const surnameRef = React.useRef(null);
 
-  // Animate the underline once on mount
+  // Animate the underline once on mount, and size it to match the actual
+  // rendered width of the surname (not a guessed percentage).
   React.useEffect(() => {
-    const el = ulineRef.current;
-    if (!el) return;
-    requestAnimationFrame(() => { el.classList.add('is-drawn'); });
+    const ul = ulineRef.current;
+    const sn = surnameRef.current;
+    if (!ul) return;
+
+    const sizeUnderline = () => {
+      if (!sn) return;
+      const w = sn.getBoundingClientRect().width;
+      ul.style.width = `${w}px`;
+    };
+
+    sizeUnderline();
+    requestAnimationFrame(() => { ul.classList.add('is-drawn'); });
+
+    // Re-measure when fonts finally load (Fraunces is loaded async)
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(sizeUnderline).catch(() => {});
+    }
+    // And on resize
+    const ro = new ResizeObserver(sizeUnderline);
+    if (sn) ro.observe(sn);
+    window.addEventListener('resize', sizeUnderline);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', sizeUnderline);
+    };
   }, []);
 
   return (
@@ -177,7 +201,7 @@ function Header() {
             <span><b>Dawid Gołębiowski</b> — Graphic Designer</span>
           </div>
           <div className="right">
-            <span><b>Warszawa, PL</b> · 52.2°N</span>
+            <span><b>Łódź, PL</b> · 51.8°N</span>
             <span>Local time → <LocalTime /></span>
           </div>
         </div>
@@ -195,7 +219,9 @@ function Header() {
           </span>
           <span className="line line-2">
             <span className="line-2-inner">
-              <KineticLine text="Gołębiowski" italic />
+              <span ref={surnameRef} style={{display:'inline-block'}}>
+                <KineticLine text="Gołębiowski" italic />
+              </span>
               <svg className="uline" ref={ulineRef} viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden>
                 <path d="M2 16 C 180 4, 360 22, 540 12 S 880 6, 998 14"
                   fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
@@ -349,10 +375,12 @@ function Header() {
           position: relative;
         }
 
-        /* Underline drawn under italic name */
+        /* Underline drawn under italic name — width is set in JS to match
+           the actual rendered text width (no guessing percentages). */
         .uline{
-          position:absolute; left: 0; right: 0; bottom: -.05em;
-          width: 100%; height: clamp(14px, 1.4vw, 24px);
+          position:absolute; left: 0; bottom: -.05em;
+          height: clamp(14px, 1.4vw, 24px);
+          display: block;
           pointer-events:none;
         }
         .uline path{
