@@ -435,6 +435,7 @@ function Header() {
 
           /* Pre-line — keep on one row when possible, but allow wrap cleanly */
           .hero-prerow{ gap: 14px; margin-top: 28px }
+          .hero-prerow .pill{ display: none }
           .hero-tag{ padding-left: 0; border: 0; width: 100% }
           .rot-word{ min-width: 0 }
 
