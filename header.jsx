@@ -1,24 +1,164 @@
-// header.jsx — three header variants (no tweaks panel, no custom cursor)
+// header.jsx — minimalist WOW header (no tweaks, no custom cursor)
 
-const SETTINGS = {
-  headerVariant: "kinetic",   // 'kinetic' | 'stacked' | 'split'
-  blueIntensity: "med",       // 'soft' | 'med' | 'bold'
-  galleryLayout: "mosaic",    // 'mosaic' | 'grid' | 'strip'
-  animations: true,
-};
+// ── Animated counter ────────────────────────────────────────────────────────
+function Counter({ to, suffix = '', duration = 1600 }) {
+  const [val, setVal] = React.useState(0);
+  const ref = React.useRef(null);
+  const started = React.useRef(false);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver((es) => {
+      es.forEach((e) => {
+        if (e.isIntersecting && !started.current) {
+          started.current = true;
+          const t0 = performance.now();
+          const tick = (now) => {
+            const p = Math.min(1, (now - t0) / duration);
+            const e = 1 - Math.pow(1 - p, 3);
+            setVal(Math.round(to * e));
+            if (p < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      });
+    }, { threshold: 0.4 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [to, duration]);
+  return <span ref={ref}>{val}{suffix}</span>;
+}
 
-// ── Header A: KINETIC EDITORIAL ─────────────────────────────────────────────
-function HeaderKinetic() {
-  const marqueeItems = ['BRANDING', '✦', 'WEB DESIGN', '✦', 'SOCIAL MEDIA', '✦', 'IDENTITY', '✦', 'PRINT', '✦', 'KEY VISUALS', '✦'];
+// ── Rotating word with mask reveal ──────────────────────────────────────────
+function RotatingWord({ words, interval = 2400 }) {
+  const [i, setI] = React.useState(0);
+  React.useEffect(() => {
+    const id = setInterval(() => setI((p) => (p + 1) % words.length), interval);
+    return () => clearInterval(id);
+  }, [words, interval]);
   return (
-    <header className="hero hero-kinetic" data-screen-label="01 Hero (kinetic)">
-      <div className="hero-aurora"></div>
-      <div className="hero-grid"></div>
+    <span className="rot-word">
+      {words.map((w, idx) => (
+        <span key={idx} className={'rot-w ' + (idx === i ? 'is-on' : '')}>{w}</span>
+      ))}
+    </span>
+  );
+}
+
+// ── Live local time ─────────────────────────────────────────────────────────
+function LocalTime() {
+  const [t, setT] = React.useState(() => new Date());
+  React.useEffect(() => {
+    const id = setInterval(() => setT(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  return <span style={{color:'var(--blue)', fontVariantNumeric:'tabular-nums'}}>
+    {String(t.getHours()).padStart(2,'0')}:{String(t.getMinutes()).padStart(2,'0')}
+  </span>;
+}
+
+// ── Kinetic letters: each letter parallax-tilts toward the mouse ────────────
+function KineticLine({ text, italic = false }) {
+  const ref = React.useRef(null);
+  const lettersRef = React.useRef([]);
+  const stateRef = React.useRef({ tx: 0, ty: 0, rx: 0, ry: 0 });
+
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const target = { x: 0, y: 0 };
+    const cur = { x: 0, y: 0 };
+    let raf;
+
+    const onMove = (e) => {
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      target.x = (e.clientX - cx) / r.width;
+      target.y = (e.clientY - cy) / r.height;
+    };
+    const tick = () => {
+      cur.x += (target.x - cur.x) * 0.08;
+      cur.y += (target.y - cur.y) * 0.08;
+      lettersRef.current.forEach((ltr, i) => {
+        if (!ltr) return;
+        // each letter shifted by small amount; letters further from center get more travel
+        const n = lettersRef.current.length;
+        const k = (i - (n - 1) / 2) / Math.max(1, (n - 1) / 2); // -1..1 across the word
+        const tx = cur.x * 18 * (0.5 + 0.5 * Math.abs(k));
+        const ty = cur.y * 10;
+        const rot = cur.x * 4 * k;
+        ltr.style.transform = `translate3d(${tx}px, ${ty}px, 0) rotate(${rot}deg)`;
+      });
+      raf = requestAnimationFrame(tick);
+    };
+    window.addEventListener('mousemove', onMove);
+    raf = requestAnimationFrame(tick);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, [text]);
+
+  const chars = text.split('');
+  return (
+    <span ref={ref} className={'kin-line' + (italic ? ' is-italic' : '')}>
+      {chars.map((c, i) => (
+        <span
+          key={i}
+          ref={(el) => { lettersRef.current[i] = el; }}
+          className="kin-ltr"
+          style={{ transitionDelay: `${i * 40}ms` }}
+        >{c === ' ' ? '\u00A0' : c}</span>
+      ))}
+    </span>
+  );
+}
+
+// ── Header ──────────────────────────────────────────────────────────────────
+function Header() {
+  const ulineRef = React.useRef(null);
+
+  // Animate the underline once on mount
+  React.useEffect(() => {
+    const el = ulineRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => { el.classList.add('is-drawn'); });
+  }, []);
+
+  return (
+    <header className="hero hero-v2" data-screen-label="01 Hero">
+
+      {/* Soft aurora */}
+      <div className="hero-aurora" aria-hidden></div>
+      {/* Masked grid */}
+      <div className="hero-grid" aria-hidden></div>
+      {/* Orbit signature */}
+      <svg className="hero-orbit" viewBox="0 0 800 800" aria-hidden>
+        <defs>
+          <radialGradient id="og" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(168,200,255,.6)"/>
+            <stop offset="100%" stopColor="rgba(168,200,255,0)"/>
+          </radialGradient>
+        </defs>
+        <circle cx="400" cy="400" r="360" fill="none" stroke="rgba(168,200,255,0.10)" strokeDasharray="2 6"/>
+        <circle cx="400" cy="400" r="280" fill="none" stroke="rgba(168,200,255,0.06)"/>
+        <g className="orbit-rotor">
+          <circle cx="400" cy="40" r="6" fill="var(--blue)"/>
+          <circle cx="400" cy="40" r="22" fill="url(#og)"/>
+        </g>
+        <g className="orbit-rotor-2">
+          <circle cx="120" cy="400" r="3" fill="var(--blue)" opacity=".5"/>
+        </g>
+      </svg>
+
       <div className="wrap">
+
+        {/* Top meta row */}
         <div className="hero-meta">
           <div className="left">
-            <span>— Portfolio / 2026</span>
-            <span><b>Dawid Gołębiowski</b></span>
+            <span className="meta-eyebrow"><span className="dot-live"></span> LIVE / PORTFOLIO 2026</span>
+            <span><b>Dawid Gołębiowski</b> — Graphic Designer</span>
           </div>
           <div className="right">
             <span><b>Warszawa, PL</b> · 52.2°N</span>
@@ -26,177 +166,214 @@ function HeaderKinetic() {
           </div>
         </div>
 
-        <div data-reveal>
-          <span className="pill"><span className="dot"></span> Available for projects · 2026 / Q3</span>
+        {/* Pre-line */}
+        <div className="hero-prerow">
+          <span className="pill"><span className="dot"></span> Available · 2026 / Q3</span>
+          <span className="hero-tag"><RotatingWord words={['buduje marki', 'projektuje strony', 'tworzy wizualizacje', 'kształtuje brandy']} /></span>
         </div>
 
-        <h1 className="name" data-reveal data-reveal-delay="1">
-          <span className="row">Dawid<span className="num">№ 01</span></span>
-          <span className="row"><span className="it">Gołębiowski.</span></span>
+        {/* The name — KINETIC + drawn underline */}
+        <h1 className="hero-name">
+          <span className="line line-1">
+            <KineticLine text="Dawid" />
+            <sup className="hero-num">№ 01 / 26</sup>
+          </span>
+          <span className="line line-2">
+            <KineticLine text="Gołębiowski" italic />
+            <svg className="uline" ref={ulineRef} viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden>
+              <path d="M2 16 C 180 4, 360 22, 540 12 S 880 6, 998 14"
+                fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </span>
         </h1>
 
-        <div className="tagline" data-reveal data-reveal-delay="2">
-          <p>
-            <span className="label">— Czym się zajmuję</span>
-            Projektuję marki, materiały graficzne i strony — z miłości do dobrej typografii i prostych decyzji.
-          </p>
-          <p>
-            <span className="label">— Specjalizacja</span>
-            Branding · Identity · Social media · Web design · Print
-          </p>
-          <p>
-            <span className="label">— Pracuję z</span>
-            Małymi studiami, startupami i markami, które chcą wyglądać jak z górnej półki.
-          </p>
-        </div>
-
-        <div className="hero-cta" data-reveal data-reveal-delay="3">
-          <a className="btn primary" href="#works">
-            Zobacz projekty <span className="arr"></span>
-          </a>
-          <a className="btn" href="#contact">
-            Pogadajmy <span className="arr"></span>
-          </a>
-        </div>
-
-        <div className="marquee" data-reveal data-reveal-delay="4">
-          <div className="marquee-track">
-            {[...marqueeItems, ...marqueeItems, ...marqueeItems].map((it, i) => (
-              <span key={i} className={it === '✦' ? 'dot' : ''}>{it}</span>
-            ))}
+        {/* Bottom row: stats + cta */}
+        <div className="hero-foot">
+          <div className="hero-stats">
+            <div className="stat">
+              <div className="num"><Counter to={5} suffix="+" /></div>
+              <div className="lbl">lat doświadczenia</div>
+            </div>
+            <div className="stat">
+              <div className="num"><Counter to={120} suffix="+" /></div>
+              <div className="lbl">zrealizowanych projektów</div>
+            </div>
+            <div className="stat">
+              <div className="num"><Counter to={40} suffix="+" /></div>
+              <div className="lbl">marek &amp; klientów</div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="scroll-cue">
-        <span>scroll</span>
-        <div className="line"></div>
-      </div>
-    </header>
-  );
-}
-
-// ── Header B: STACKED BIG TYPE ──────────────────────────────────────────────
-function HeaderStacked() {
-  return (
-    <header className="hero hero-stacked" data-screen-label="01 Hero (stacked)">
-      <div className="hero-aurora"></div>
-      <div className="hero-grid"></div>
-      <div className="wrap">
-        <div className="hero-meta">
-          <div className="left">
-            <span>— Portfolio / 2026</span>
-            <span><b>Graphic Designer · Freelance</b></span>
-          </div>
-          <div className="right">
-            <span><b>Warszawa, PL</b></span>
-            <span>Local time → <LocalTime /></span>
-          </div>
-        </div>
-
-        <div style={{textAlign:'center', margin:'40px 0 20px'}} data-reveal>
-          <span className="pill"><span className="dot"></span> Available 2026 / Q3 — 2 sloty</span>
-        </div>
-
-        <h1 className="name" data-reveal data-reveal-delay="1">
-          <span style={{display:'block'}}>Dawid</span>
-          <span className="it" style={{display:'block'}}>Gołębiowski</span>
-        </h1>
-
-        <div className="role" data-reveal data-reveal-delay="2">
-          <span><b>Graphic Designer</b> · est. 2020</span>
-          <span>Branding · Web · Social</span>
-          <span>(@dgolebiowski_)</span>
-        </div>
-
-        <div style={{textAlign:'center', marginTop:64}} data-reveal data-reveal-delay="3">
-          <div className="hero-cta" style={{justifyContent:'center', display:'inline-flex'}}>
-            <a className="btn primary" href="#works">Selected works <span className="arr"></span></a>
+          <div className="hero-cta">
+            <a className="btn primary" href="#works">Zobacz projekty <span className="arr"></span></a>
             <a className="btn" href="#contact">Pogadajmy <span className="arr"></span></a>
           </div>
         </div>
+
       </div>
 
+      {/* Scroll cue */}
       <div className="scroll-cue">
         <span>scroll</span>
         <div className="line"></div>
       </div>
+
+      {/* Header-only styles (scoped via .hero-v2) */}
+      <style>{`
+        .hero-v2{
+          min-height: 100vh;
+          padding: 130px 0 100px;
+          display:flex; flex-direction:column;
+          position:relative; overflow:hidden;
+          border-bottom:1px solid var(--line);
+        }
+        .hero-v2 .wrap{ display:flex; flex-direction:column; flex:1; min-height:0 }
+
+        /* Orbit */
+        .hero-orbit{
+          position:absolute; left:50%; top:54%; width: 1100px; height:1100px;
+          transform: translate(-50%, -50%);
+          pointer-events:none; opacity:.7;
+          mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, #000 30%, transparent 75%);
+          -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, #000 30%, transparent 75%);
+        }
+        .orbit-rotor{ transform-origin: 400px 400px; animation: orbit-spin 18s linear infinite }
+        .orbit-rotor-2{ transform-origin: 400px 400px; animation: orbit-spin 28s linear infinite reverse }
+        @keyframes orbit-spin{ from{ transform: rotate(0) } to{ transform: rotate(360deg) } }
+
+        /* Pre row */
+        .hero-prerow{
+          margin-top: 36px;
+          display:flex; align-items:center; gap: 24px; flex-wrap:wrap;
+          opacity: 0; transform: translateY(14px);
+          animation: rise .9s .1s cubic-bezier(.2,.7,.2,1) forwards;
+        }
+        .meta-eyebrow{ display:inline-flex; align-items:center; gap:8px }
+        .dot-live{
+          width:6px; height:6px; border-radius:50%; background:#ff5d5d;
+          box-shadow:0 0 0 4px rgba(255,93,93,.18);
+          animation: pulse 1.6s ease-in-out infinite;
+        }
+        .hero-tag{
+          font-family:var(--mono); font-size: 12px; letter-spacing:.06em;
+          text-transform:uppercase; color:var(--fg-3);
+          padding-left:24px; border-left:1px solid var(--line);
+        }
+        .rot-word{ position:relative; display:inline-block; min-width: 220px; height:1.2em; vertical-align:bottom }
+        .rot-w{
+          position:absolute; left:0; top:0;
+          color:var(--fg);
+          opacity:0; transform: translateY(8px);
+          transition: opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1);
+          white-space:nowrap;
+        }
+        .rot-w.is-on{ opacity:1; transform: translateY(0) }
+
+        /* Name */
+        .hero-name{
+          font-family: var(--serif);
+          font-weight: 300;
+          margin: 36px 0 0;
+          line-height: 0.86;
+          letter-spacing: -0.045em;
+          font-size: clamp(64px, 14.5vw, 240px);
+        }
+        .hero-name .line{ display:block; position:relative }
+        .hero-name .line-1{ }
+        .hero-name .line-2{ color: var(--blue); margin-top: 6px }
+        .hero-num{
+          display:inline-block;
+          font-family: var(--mono); font-size: 12px; font-weight: 400;
+          letter-spacing: .08em; color: var(--fg-3);
+          margin-left: 16px; vertical-align: top; transform: translateY(.4em);
+        }
+
+        /* Kinetic letters */
+        .kin-line{ display:inline-block; }
+        .kin-line.is-italic{ font-style: italic; font-weight: 300 }
+        .kin-ltr{
+          display:inline-block;
+          will-change: transform;
+          transition: transform .9s cubic-bezier(.2,.7,.2,1);
+          opacity: 0;
+          transform: translateY(40px);
+          animation: ltr-rise .8s cubic-bezier(.2,.7,.2,1) forwards;
+        }
+        .kin-line.is-italic .kin-ltr{ animation-delay: calc(var(--d, 0) * 1ms) }
+        .hero-name .line-1 .kin-ltr:nth-child(1){ animation-delay: 60ms }
+        .hero-name .line-1 .kin-ltr:nth-child(2){ animation-delay: 120ms }
+        .hero-name .line-1 .kin-ltr:nth-child(3){ animation-delay: 180ms }
+        .hero-name .line-1 .kin-ltr:nth-child(4){ animation-delay: 240ms }
+        .hero-name .line-1 .kin-ltr:nth-child(5){ animation-delay: 300ms }
+        .hero-name .line-2 .kin-ltr{ animation-delay: calc(360ms + (var(--n, 0) * 50ms)) }
+        .hero-name .line-2 .kin-ltr:nth-child(1){ animation-delay: 380ms }
+        .hero-name .line-2 .kin-ltr:nth-child(2){ animation-delay: 430ms }
+        .hero-name .line-2 .kin-ltr:nth-child(3){ animation-delay: 480ms }
+        .hero-name .line-2 .kin-ltr:nth-child(4){ animation-delay: 530ms }
+        .hero-name .line-2 .kin-ltr:nth-child(5){ animation-delay: 580ms }
+        .hero-name .line-2 .kin-ltr:nth-child(6){ animation-delay: 630ms }
+        .hero-name .line-2 .kin-ltr:nth-child(7){ animation-delay: 680ms }
+        .hero-name .line-2 .kin-ltr:nth-child(8){ animation-delay: 730ms }
+        .hero-name .line-2 .kin-ltr:nth-child(9){ animation-delay: 780ms }
+        .hero-name .line-2 .kin-ltr:nth-child(10){ animation-delay: 830ms }
+        .hero-name .line-2 .kin-ltr:nth-child(11){ animation-delay: 880ms }
+
+        @keyframes ltr-rise{
+          to{ opacity:1; transform: translateY(0) }
+        }
+        @keyframes rise{
+          to{ opacity:1; transform: translateY(0) }
+        }
+
+        /* Underline drawn under italic name */
+        .uline{
+          position:absolute; left: 0; right: 0; bottom: -.05em;
+          width: 70%; height: clamp(14px, 1.4vw, 24px);
+          pointer-events:none;
+        }
+        .uline path{
+          stroke-dasharray: 1400;
+          stroke-dashoffset: 1400;
+          transition: stroke-dashoffset 1.6s 1.1s cubic-bezier(.2,.7,.2,1);
+          filter: drop-shadow(0 0 8px rgba(168,200,255,.45));
+        }
+        .uline.is-drawn path{ stroke-dashoffset: 0 }
+
+        /* Bottom row */
+        .hero-foot{
+          margin-top: auto; padding-top: 80px;
+          display:flex; align-items:flex-end; justify-content:space-between;
+          gap: 40px; flex-wrap:wrap;
+          opacity:0; transform: translateY(16px);
+          animation: rise .9s 1.2s cubic-bezier(.2,.7,.2,1) forwards;
+        }
+        .hero-stats{
+          display:flex; gap: 56px; flex-wrap:wrap;
+        }
+        .stat .num{
+          font-family: var(--serif); font-weight: 300;
+          font-size: clamp(36px, 4vw, 56px);
+          letter-spacing: -.02em; line-height: 1;
+          font-variant-numeric: tabular-nums;
+        }
+        .stat .lbl{
+          margin-top: 6px;
+          font-family: var(--mono); font-size: 11px;
+          color: var(--fg-3); letter-spacing: .06em; text-transform: uppercase;
+        }
+
+        @media (max-width: 780px){
+          .hero-v2{ padding: 110px 0 80px }
+          .hero-prerow{ gap: 12px }
+          .hero-tag{ padding-left: 0; border:0 }
+          .hero-foot{ padding-top: 56px }
+          .hero-stats{ gap: 24px }
+          .uline{ width: 88% }
+        }
+      `}</style>
     </header>
   );
-}
-
-// ── Header C: SPLIT EDITORIAL ───────────────────────────────────────────────
-function HeaderSplit() {
-  return (
-    <header className="hero" data-screen-label="01 Hero (split)">
-      <div className="hero-aurora"></div>
-      <div className="hero-grid"></div>
-      <div className="wrap">
-        <div className="hero-meta">
-          <div className="left">
-            <span>— Portfolio / 2026</span>
-            <span><b>Dawid Gołębiowski</b></span>
-          </div>
-          <div className="right">
-            <span><b>Warszawa, PL</b></span>
-            <span>Local time → <LocalTime /></span>
-          </div>
-        </div>
-
-        <div className="hero-split" style={{marginTop:'80px'}}>
-          <div className="lhs" data-reveal>
-            <div className="label">— Graphic Designer / Freelance</div>
-            <h1>
-              <span style={{display:'block'}}>Dawid</span>
-              <span className="it" style={{display:'block'}}>Gołębiowski</span>
-            </h1>
-          </div>
-          <div className="rhs" data-reveal data-reveal-delay="2">
-            <p>Projektuję marki, materiały i strony, które<br/>mają <span style={{color:'var(--blue)', fontStyle:'italic'}}>wyglądać tak dobrze, jak działają</span>.</p>
-            <p style={{color:'var(--fg-3)', fontSize:14}}>5+ lat doświadczenia · 120+ projektów · 40+ marek.</p>
-            <span className="pill"><span className="dot"></span> Wolne sloty na Q3 2026</span>
-          </div>
-        </div>
-
-        <div className="hero-cta" data-reveal data-reveal-delay="3">
-          <a className="btn primary" href="#works">Zobacz projekty <span className="arr"></span></a>
-          <a className="btn" href="#contact">Pogadajmy <span className="arr"></span></a>
-        </div>
-      </div>
-
-      <div className="scroll-cue">
-        <span>scroll</span>
-        <div className="line"></div>
-      </div>
-    </header>
-  );
-}
-
-function LocalTime() {
-  const [t, setT] = React.useState(() => new Date());
-  React.useEffect(() => {
-    const id = setInterval(() => setT(new Date()), 30000);
-    return () => clearInterval(id);
-  }, []);
-  const hh = String(t.getHours()).padStart(2,'0');
-  const mm = String(t.getMinutes()).padStart(2,'0');
-  return <span style={{color:'var(--blue)'}}>{hh}:{mm}</span>;
-}
-
-// ── App ─────────────────────────────────────────────────────────────────────
-function App() {
-  React.useEffect(() => {
-    document.body.dataset.blue = SETTINGS.blueIntensity;
-    document.body.dataset.gallery = SETTINGS.galleryLayout;
-    document.body.dataset.anim = SETTINGS.animations ? '1' : '0';
-  }, []);
-
-  const Header = SETTINGS.headerVariant === 'stacked' ? HeaderStacked
-              : SETTINGS.headerVariant === 'split' ? HeaderSplit
-              : HeaderKinetic;
-
-  return <Header />;
 }
 
 const root = ReactDOM.createRoot(document.getElementById('header-mount'));
-root.render(<App />);
+root.render(<Header />);
