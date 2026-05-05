@@ -603,6 +603,30 @@
 
   @media (max-width:900px){ .contact{ grid-template-columns: 1fr; gap:40px } }
 
+  @media (max-width:780px){
+    /* Email link — prevent overflow on narrow screens */
+    .contact .email-link{
+      font-size: 22px;
+      gap: 10px;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 100%;
+    }
+    .contact .email-link span:last-child{
+      margin-left: 0 !important;
+      width: 100%;
+    }
+
+    /* Form — tighter padding, stack the two-column row */
+    .form{ padding: 22px }
+    .form .row2{ grid-template-columns: 1fr; gap: 14px }
+    .form button{ width: 100%; justify-content: center }
+
+    /* Belt-and-suspenders: kill the scroll cue on mobile globally
+       (the React-scoped rule may not always win the cascade) */
+    .scroll-cue{ display: none !important }
+  }
+
   /* ================= FOOTER ================= */
   footer{
     padding: 40px 0 32px;
