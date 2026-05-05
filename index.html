@@ -405,6 +405,22 @@
     transition: transform .8s cubic-bezier(.2,.7,.2,1);
   }
   .work:hover .work-ph{ transform:scale(1.04) }
+  .work-img{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    display:block;
+    transition: transform .8s cubic-bezier(.2,.7,.2,1);
+  }
+  .work:hover .work-img{ transform:scale(1.04) }
+  /* Subtle dim so the meta caption stays readable on hover */
+  .work::after{
+    content:""; position:absolute; inset:0;
+    background: linear-gradient(180deg, transparent 50%, rgba(13,17,23,0.55));
+    opacity: 0; transition: opacity .4s;
+    pointer-events:none;
+  }
+  .work:hover::after{ opacity: 1 }
   .work-meta{
     position:absolute; left:18px; right:18px; bottom:18px;
     display:flex; justify-content:space-between; align-items:flex-end;
@@ -756,7 +772,7 @@
     <div class="works-mosaic" id="works-grid">
       <!-- 8 placeholders w/ different sizes -->
       <a class="work s-a" data-reveal>
-        <div class="work-ph">drop hero shot · branding</div>
+        <img class="work-img" src="img/dgolebiowski-1.webp" alt="Northwave Studio — branding" loading="lazy" decoding="async" />
         <div class="corner"><b>01 /</b> 08</div>
         <div class="work-meta">
           <div class="ttl">Northwave <span class="it">Studio</span></div>
@@ -764,7 +780,7 @@
         </div>
       </a>
       <a class="work s-b" data-reveal data-reveal-delay="1">
-        <div class="work-ph">drop image · poster</div>
+        <img class="work-img" src="img/dgolebiowski-1.webp" alt="Pellegrini Cafe — identity" loading="lazy" decoding="async" />
         <div class="corner"><b>02 /</b> 08</div>
         <div class="work-meta">
           <div class="ttl">Pellegrini <span class="it">Cafe</span></div>
@@ -772,7 +788,7 @@
         </div>
       </a>
       <a class="work s-c" data-reveal>
-        <div class="work-ph">drop image · social</div>
+        <img class="work-img" src="img/dgolebiowski-1.webp" alt="Form & Field — social media" loading="lazy" decoding="async" />
         <div class="corner"><b>03 /</b> 08</div>
         <div class="work-meta">
           <div class="ttl">Form &amp; <span class="it">Field</span></div>
@@ -780,7 +796,7 @@
         </div>
       </a>
       <a class="work s-d" data-reveal data-reveal-delay="1">
-        <div class="work-ph">drop image · web</div>
+        <img class="work-img" src="img/dgolebiowski-1.webp" alt="Atelier Lume — web design" loading="lazy" decoding="async" />
         <div class="corner"><b>04 /</b> 08</div>
         <div class="work-meta">
           <div class="ttl">Atelier <span class="it">Lume</span></div>
@@ -788,7 +804,7 @@
         </div>
       </a>
       <a class="work s-e" data-reveal data-reveal-delay="2">
-        <div class="work-ph">drop image · packaging</div>
+        <img class="work-img" src="img/dgolebiowski-1.webp" alt="Modra Brewery — packaging" loading="lazy" decoding="async" />
         <div class="corner"><b>05 /</b> 08</div>
         <div class="work-meta">
           <div class="ttl">Modra <span class="it">Brewery</span></div>
@@ -796,7 +812,7 @@
         </div>
       </a>
       <a class="work s-f" data-reveal>
-        <div class="work-ph">drop image · campaign</div>
+        <img class="work-img" src="img/dgolebiowski-1.webp" alt="Luma Festival — key visual" loading="lazy" decoding="async" />
         <div class="corner"><b>06 /</b> 08</div>
         <div class="work-meta">
           <div class="ttl">Luma <span class="it">Festival</span></div>
@@ -804,7 +820,7 @@
         </div>
       </a>
       <a class="work s-g" data-reveal data-reveal-delay="1">
-        <div class="work-ph">drop image · editorial</div>
+        <img class="work-img" src="img/dgolebiowski-1.webp" alt="Vermilion Press — editorial" loading="lazy" decoding="async" />
         <div class="corner"><b>07 /</b> 08</div>
         <div class="work-meta">
           <div class="ttl">Vermilion <span class="it">Press</span></div>
@@ -812,7 +828,7 @@
         </div>
       </a>
       <a class="work s-h" data-reveal data-reveal-delay="2">
-        <div class="work-ph">drop image · ui</div>
+        <img class="work-img" src="img/dgolebiowski-1.webp" alt="Halo App — UI" loading="lazy" decoding="async" />
         <div class="corner"><b>08 /</b> 08</div>
         <div class="work-meta">
           <div class="ttl">Halo <span class="it">App</span></div>
