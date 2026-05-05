@@ -192,14 +192,15 @@ function Header() {
         <h1 className="hero-name">
           <span className="line line-1">
             <KineticLine text="Dawid" />
-            <sup className="hero-num">№ 01 / 26</sup>
           </span>
           <span className="line line-2">
-            <KineticLine text="Gołębiowski" italic />
-            <svg className="uline" ref={ulineRef} viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden>
-              <path d="M2 16 C 180 4, 360 22, 540 12 S 880 6, 998 14"
-                fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
+            <span className="line-2-inner">
+              <KineticLine text="Gołębiowski" italic />
+              <svg className="uline" ref={ulineRef} viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden>
+                <path d="M2 16 C 180 4, 360 22, 540 12 S 880 6, 998 14"
+                  fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </span>
           </span>
         </h1>
 
@@ -341,10 +342,17 @@ function Header() {
           to{ opacity:1; transform: translateY(0) }
         }
 
+        /* Inline-block wrapper hugs the italic word so the underline
+           spans exactly the text width — no manual % to guess. */
+        .line-2-inner{
+          display: inline-block;
+          position: relative;
+        }
+
         /* Underline drawn under italic name */
         .uline{
           position:absolute; left: 0; right: 0; bottom: -.05em;
-          width: 70%; height: clamp(14px, 1.4vw, 24px);
+          width: 100%; height: clamp(14px, 1.4vw, 24px);
           pointer-events:none;
         }
         .uline path{
@@ -414,9 +422,6 @@ function Header() {
           /* The italic surname is the longest word — let it shrink a touch
              more on narrow screens so it never clips the wrap padding. */
           .hero-name .line-2{ font-size: 0.92em }
-
-          /* Underline tracks the actual italic word width */
-          .uline{ width: 92% }
 
           /* Stats + CTA */
           .hero-foot{
